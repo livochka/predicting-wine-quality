@@ -1,0 +1,251 @@
+---
+title: "Predicting the quality of red wine"
+output:
+  html_document:
+    df_print: paged
+---
+###<span style="color:#BB3316">Synopsis</span>
+Mini-research project for Statistic course. Includes analyzing and predicting the quality of red wine. Based on Portuguese "Vinho Verde" red wine dataset. Includes tips for begginers in data science from Kaggle: https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009/kernels.
+
+Some useful packages:
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(caret)
+library(MASS)
+```
+
+###<span style="color:#BB3316">Reading and cleaning data</span>
+
+```{r}
+wine <- read.csv("wine_quality.csv")
+head(wine)
+```
+
+
+
+
+###<span style="color:#BB3316">Disrtibution of wine quality</span>
+As one can see, the largest number of wines have a mediocre quality, 
+```{r}
+table(wine$quality)
+hist(wine$quality,col="darkred",border="white", main="Distribution of red wine quality", breaks=c(2, 3, 4, 5, 6, 7, 8))
+box(bty="l")
+grid(nx=NA,ny=NULL,lty=1,lwd=1,col="gray")
+```
+
+###<span style="color:#BB3316">Clasification</span>
+Splitting the wines into two category for visual analysis and performaing later regressions, so we have two possible classes:</br>
+</br>
+- *low quality wine*</br>
+- *high quality wine*
+
+```{r}
+
+wine$high <- wine$quality >= 7
+summary(wine)
+```
+
+###<span style="color:#BB3316">Analyzing influence of different parameters on wine quality</span>
+
+
+```{r}
+ggplot(wine,aes(x=fixed.acidity,fill=factor(high)))+geom_density(alpha=0.5)+
+  xlab(label = "Fixed Acidity Level")+
+  ggtitle("Distribution of Fixed Acidity Levels")+
+  theme_minimal()
+```
+
+```{r}
+ggplot(wine,aes(x=alcohol,fill=factor(high)))+geom_density(alpha=0.5)+
+  xlab(label = "Alcohol level")+
+  ggtitle("Distribution of Alcohol Levels")+
+  theme_minimal()
+```
+
+
+```{r}
+ggplot(wine,aes(x=volatile.acidity,fill=factor(high)))+geom_density(alpha=0.5)+
+  xlab(label = "Volatile acidity")+
+  ggtitle("Distribution of Volatile Acidity Levels")+
+  theme_minimal()
+```
+
+```{r}
+ggplot(wine,aes(x=citric.acid,fill=factor(high)))+geom_density(alpha=0.5)+
+  xlab(label =  "Citric Acid")+
+  ggtitle("Distribution of Citric Acid Levels")+
+  theme_minimal()
+```
+
+
+```{r}
+ggplot(wine,aes(x=residual.sugar,fill=factor(high)))+geom_density(alpha=0.5)+
+  xlab(label = "Residual sugar")+
+  ggtitle("Distribution of Residual Sugar Levels")+
+  theme_minimal()
+```
+
+
+```{r}
+ggplot(wine,aes(x=chlorides,fill=factor(high)))+geom_density(alpha=0.5)+
+  xlab(label = "Chlorides")+
+  ggtitle("Distribution of Chlorides Levels")+
+  theme_minimal()
+```
+
+```{r}
+ggplot(wine,aes(x=free.sulfur.dioxide,fill=factor(high)))+geom_density(alpha=0.5)+
+  xlab(label = "Free sulfur dioxide")+
+  ggtitle("Distribution of Free sulfur dioxide Levels")+
+  theme_minimal()
+```
+
+```{r}
+ggplot(wine,aes(x=total.sulfur.dioxide,fill=factor(high)))+geom_density(alpha=0.5)+
+  xlab(label = "Total sulfur dioxide")+
+  ggtitle("Distribution of Total sulfur dioxide Levels")+
+  theme_minimal()
+```
+
+```{r}
+ggplot(wine,aes(x=density,fill=factor(high)))+geom_density(alpha=0.5)+
+  xlab(label = "Density")+
+  ggtitle("Distribution of Density Levels")+
+  theme_minimal()
+```
+
+```{r}
+ggplot(wine,aes(x=pH,fill=factor(high)))+geom_density(alpha=0.5)+
+  xlab(label = "pH")+
+  ggtitle("Distribution of pH Levels")+
+  theme_minimal()
+```
+
+```{r}
+ggplot(wine,aes(x=sulphates,fill=factor(high)))+geom_density(alpha=0.5)+
+  xlab(label = "Sulphates")+
+  ggtitle("Distribution of Sulphates Levels")+
+  theme_minimal()
+```
+
+###<span style="color:#BB3316">Hypothesis testing</span>
+$H_0$ - Alcohol level and quality are assigned independently <br/>
+$H_1$ - There is a dependence between the alcohol level and quality of the wine <br/>
+
+
+Organazing data into dataframe
+```{r}
+alcohols <- unique(wine$alcohol)
+q.3 <- c()
+q.4 <- c()
+q.5 <- c()
+q.6 <- c()
+q.7 <- c()
+q.8 <- c()
+n.i <- c()
+n.j <- c()
+
+
+for (i in 1:length(unique(wine$alcohol))){
+  q.3[i] <- 0 
+  q.4[i] <- 0
+  q.5[i] <- 0
+  q.6[i] <- 0
+  q.7[i] <- 0
+  q.8[i] <- 0
+}
+
+for (row in 1:nrow(wine)){
+  index <- which(alcohols == wine[row, "alcohol"])
+  q <- wine[row, "quality"]
+  if (q == 3){
+    q.3[index] <- q.3[index] + 1
+  }
+  else if (q == 4){
+    q.4[index] <- q.4[index] + 1
+  }
+  else if (q == 5){
+    q.5[index] <- q.5[index] + 1
+  }
+  else if (q == 6){
+    q.6[index] <- q.6[index] + 1
+  }
+  else if (q == 7){
+    q.7[index] <- q.7[index] + 1
+  }
+  else if (q == 8){
+    q.8[index] <- q.8[index] + 1
+  }
+  
+}
+
+df1 <- data.frame(q.3, q.4, q.5, q.6, q.7, q.8, row.names=alcohols)
+```
+I used chi-squared statistics for testing wine quality and wine alcohol level fot statistical independence. The value of test statistics: <br/>
+
+$\chi^2 = \sum_{i=1}^{r}\sum_{j=1}^{c} \frac{O_{ij} - E_{ij}}{E_{ij}}$
+
+Then, we compare it with $\chi^2_{(c-1)(r -1)}$ distribution and calculate p-value.
+
+
+```{r}
+chisq.test(df1)
+```
+
+###<span style="color:#BB3316">Conclusion</span>
+p-value is almost zero, so we reject $H_0$. The quality of red wine and its alcohol level are dependent.
+
+###<span style="color:#BB3316">Performing loglinear regression</span>
+
+Firstly I desided to find the correlation between different factors and wine quality:
+```{r}
+correlation <- cor(wine)
+print(correlation[,"quality"])
+```
+
+Quality he most correlates with volatile.acidity, citric.acid, total.sulfur.dioxide, density, sulphates, alcohol 
+
+###<span style="color:#BB3316">Model training</span>
+
+```{r}
+wine$high <- as.factor(wine$high)
+train <- wine[1:1280, ]
+test <- wine[1281:1599,]
+```
+
+
+There aren't any correlation coefficient equals +-1, so we can't build a strong linear model. Let's try performing binomial logistic regression to predict whether the wine has a high  quality. It works as follows:<br/>
+1. Building a model for finding probability that wine is good<br/>
+$P(y = 1|x) = f(z)$, \
+$z = \theta^Tx = \theta_0 + \theta_1x_1 + ... \theta_nx_n$ \
+$f(z) = \frac{1}{1 + e^{-z}}$, \
+$\theta_0, ... \theta_n$ are regression coefficients\
+Actually, building a model mean specifying $\theta$.
+2. For every wine in testing dataset,  we estimate the probability that it has quality via model. If P(y = 1|x) > 0.5, classify the wine as good.\
+3. Comparing predicted quality with actual data and calculating the accuracy of the model as relative frequencies:\
+Accuracy = $\frac{\text{True positive + True Negative}}{\text{True positive + False positive + True negative + False negative}}$
+
+```{r}
+
+model <- glm(high ~ alcohol + total.sulfur.dioxide +  citric.acid + volatile.acidity + density + sulphates ,
+                      data = train, family=binomial(link='logit'))
+```
+
+
+###<span style="color:#BB3316">Model testing</span>
+```{r}
+prediction <- predict.glm(model, newdata = test, type = 'response')
+prediction <- ifelse(prediction > 0.5,TRUE,FALSE)
+result <- data.frame(prediction)
+result$prediction <- as.factor(result$prediction)
+confusionMatrix(result$prediction, test$high)
+
+```
+
+###<span style="color:#BB3316">Conclusion</span>
+The accuracy is high, so model fits the data and can be used to predict wine quality!
+
+
+
